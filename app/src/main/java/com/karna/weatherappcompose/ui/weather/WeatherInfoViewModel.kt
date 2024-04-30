@@ -1,10 +1,14 @@
 package com.karna.weatherappcompose.ui.weather
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import com.google.gson.Gson
 import com.karna.weatherappcompose.data.ApiState
 import com.karna.weatherappcompose.data.currentTemperatureModels.WeatherData
+import com.karna.weatherappcompose.data.forecastTemperatureModels.ForecastDisplayModel
 import com.karna.weatherappcompose.data.forecastTemperatureModels.ForecastItem
 import com.karna.weatherappcompose.data.forecastTemperatureModels.WeatherForecastResponse
+import com.karna.weatherappcompose.utils.CommonUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -14,8 +18,10 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.ArrayList
 import java.util.Locale
 import javax.inject.Inject
 
@@ -25,14 +31,21 @@ class WeatherInfoViewModel @Inject constructor(private val repo: WeatherInfoRepo
     private val _currentWeatherInfo = MutableSharedFlow<WeatherData>()
     val currentWeatherInfo = _currentWeatherInfo.asSharedFlow()
 
-    private val _nextFourDaysForecast = MutableSharedFlow<List<ForecastItem>>()
+    private val _nextFourDaysForecast = MutableSharedFlow<List<ForecastDisplayModel>>()
     val nextFourDaysForecast = _nextFourDaysForecast.asSharedFlow()
+
+    private val _loader = MutableSharedFlow<Boolean>()
+    val loader = _loader.asSharedFlow()
 
     private val _failureCase = MutableSharedFlow<Throwable>()
     val failureCase = _failureCase.asSharedFlow()
 
+    init {
+        getWeatherInformation()
+    }
+
     // Function to get both Current  and Forecast weather info  from server
-    fun getWeatherInformation() {
+    private fun getWeatherInformation() {
 
         CoroutineScope(Dispatchers.IO).launch {
 
@@ -66,37 +79,50 @@ class WeatherInfoViewModel @Inject constructor(private val repo: WeatherInfoRepo
                     val forecastWeatherData =
                         forecastWeatherApiState.data as WeatherForecastResponse
 
+                    Log.d(
+                        "VM",
+                        "Checking ForeCast --------- ${Gson().toJson(forecastWeatherApiState)}"
+                    )
+
                     // Get the current date
-                    val currentDate = LocalDateTime.now().dayOfMonth
+                    val currentDate = LocalDate.now().dayOfMonth
 
                     // Filter the forecast data to include only the next four days' forecast
                     val nextFourDaysForecast =
                         forecastWeatherData.forecastList.filter { forecastItem ->
                             // Extract the date from the forecast item
                             val forecastDate = LocalDateTime.parse(
-                                forecastItem.dateTime,
+                                forecastItem.dt_txt,
                                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
                             ).dayOfMonth
-
+                            Log.d("VM", "Checking ForeCast --------- ")
                             // Check if the forecast date is within the next four days
                             forecastDate in currentDate + 1..currentDate + 4
                         }.distinctBy { forecastItem ->
                             // Use distinctBy to remove duplicate entries based on the date
                             LocalDateTime.parse(
-                                forecastItem.dateTime,
+                                forecastItem.dt_txt,
                                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
                             ).dayOfMonth
                         }
-                    _nextFourDaysForecast.emit(nextFourDaysForecast)
+
+
+                    Log.d("VM", "Checking ForeCast --------- ${nextFourDaysForecast.size} ---")
+
+                    val listForDisplay = ArrayList<ForecastDisplayModel>()
+                    for (item in nextFourDaysForecast) {
+                        val pair = getDayAndTemperature(item)
+                        listForDisplay.add(ForecastDisplayModel(pair.first, pair.second))
+                    }
+                    Log.d("VM", "Checking ForeCast --------- ${listForDisplay.size}")
+                    _nextFourDaysForecast.emit(listForDisplay)
+
+                    _loader.emit(false)
                 }
             }
 
         }
 
-    }
-
-    fun kelvinToCelsius(kelvin: Double): Double {
-        return kelvin - 273.15
     }
 
     private fun getDayOfWeek(dateString: String): String {
@@ -107,9 +133,10 @@ class WeatherInfoViewModel @Inject constructor(private val repo: WeatherInfoRepo
         return outputFormat.format(date!!)
     }
 
-    fun getDayAndTemperature(forecastItem: ForecastItem): Pair<String, String> {
-        val day = getDayOfWeek(forecastItem.dateTime)
-        val temp = "${(kelvinToCelsius(forecastItem.mainInfo.temperature)).toInt()}\u00B0 C"
+    private fun getDayAndTemperature(forecastItem: ForecastItem): Pair<String, String> {
+        val day = getDayOfWeek(forecastItem.dt_txt)
+        val temp =
+            "${(CommonUtils.kelvinToCelsius(forecastItem.main.temperature)).toInt()}\u00B0 C"
         return Pair(day, temp)
     }
 

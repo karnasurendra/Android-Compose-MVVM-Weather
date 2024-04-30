@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">WeatherAppCompose</string>
+    <string name="bangalore">Bangalore</string>
+    <string name="degree_indicator">\u00B0</string>
 </resources>
