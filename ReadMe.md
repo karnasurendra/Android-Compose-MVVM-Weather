@@ -59,6 +59,6 @@ The app makes two API calls using Retrofit:
     Android Lifecycle Components: https://developer.android.com/topic/libraries/architecture/lifecycle
     Jetpack Compose: https://developer.android.com/jetpack/compose
 
-![Alt Text](https://github.com/karnasurendra/WeatherInfo/blob/master/WhatsApp%20Image%202024-04-14%20at%2013.42.33.jpeg)
+![Alt Text](https://github.com/karnasurendra/Android-Compose-MVVM-Weather/blob/main/WhatsApp%20Image%202024-05-01%20at%2017.18.24.jpeg)
+![Alt Text](https://github.com/karnasurendra/Android-Compose-MVVM-Weather/blob/main/WhatsApp%20Image%202024-05-01%20at%2017.18.24%20(1).jpeg)
 
-![Alt Text](https://github.com/karnasurendra/WeatherInfo/blob/master/WhatsApp%20Image%202024-04-14%20at%2013.42.34.jpeg)
