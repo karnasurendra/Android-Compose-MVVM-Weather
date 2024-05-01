@@ -1,7 +1,9 @@
 package com.karna.weatherappcompose.ui.weather
 
 import android.util.Log
+import androidx.compose.material3.SnackbarHostState
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
 import com.karna.weatherappcompose.data.ApiState
 import com.karna.weatherappcompose.data.currentTemperatureModels.WeatherData
@@ -37,15 +39,21 @@ class WeatherInfoViewModel @Inject constructor(private val repo: WeatherInfoRepo
     private val _loader = MutableSharedFlow<Boolean>()
     val loader = _loader.asSharedFlow()
 
-    private val _failureCase = MutableSharedFlow<Throwable>()
-    val failureCase = _failureCase.asSharedFlow()
+    private val _showSnackBar = MutableSharedFlow<Boolean>()
+    val showSnackBar = _showSnackBar.asSharedFlow()
 
     init {
         getWeatherInformation()
     }
 
+    fun loaderUpdate(isShow: Boolean) {
+        viewModelScope.launch {
+            _loader.emit(isShow)
+        }
+    }
+
     // Function to get both Current  and Forecast weather info  from server
-    private fun getWeatherInformation() {
+     fun getWeatherInformation() {
 
         CoroutineScope(Dispatchers.IO).launch {
 
@@ -62,7 +70,7 @@ class WeatherInfoViewModel @Inject constructor(private val repo: WeatherInfoRepo
 
             when (currentWeatherApiState) {
                 is ApiState.Failure -> {
-                    _failureCase.emit(currentWeatherApiState.throwable)
+                    _showSnackBar.emit(true)
                 }
 
                 is ApiState.Success -> {
@@ -72,7 +80,7 @@ class WeatherInfoViewModel @Inject constructor(private val repo: WeatherInfoRepo
 
             when (forecastWeatherApiState) {
                 is ApiState.Failure -> {
-                    _failureCase.emit(forecastWeatherApiState.throwable)
+                    _showSnackBar.emit(true)
                 }
 
                 is ApiState.Success -> {
@@ -108,6 +116,10 @@ class WeatherInfoViewModel @Inject constructor(private val repo: WeatherInfoRepo
 
 
                     Log.d("VM", "Checking ForeCast --------- ${nextFourDaysForecast.size} ---")
+
+                    val datesList = forecastWeatherData.forecastList.distinctBy { it.dt_txt }
+
+                    Log.d("VM", "Checking ForeCast --------- Distint list ${datesList.size} ---")
 
                     val listForDisplay = ArrayList<ForecastDisplayModel>()
                     for (item in nextFourDaysForecast) {
