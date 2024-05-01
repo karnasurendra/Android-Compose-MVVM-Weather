@@ -87,11 +87,6 @@ class WeatherInfoViewModel @Inject constructor(private val repo: WeatherInfoRepo
                     val forecastWeatherData =
                         forecastWeatherApiState.data as WeatherForecastResponse
 
-                    Log.d(
-                        "VM",
-                        "Checking ForeCast --------- ${Gson().toJson(forecastWeatherApiState)}"
-                    )
-
                     // Get the current date
                     val currentDate = LocalDate.now().dayOfMonth
 
@@ -103,7 +98,6 @@ class WeatherInfoViewModel @Inject constructor(private val repo: WeatherInfoRepo
                                 forecastItem.dt_txt,
                                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
                             ).dayOfMonth
-                            Log.d("VM", "Checking ForeCast --------- ")
                             // Check if the forecast date is within the next four days
                             forecastDate in currentDate + 1..currentDate + 4
                         }.distinctBy { forecastItem ->
@@ -114,19 +108,11 @@ class WeatherInfoViewModel @Inject constructor(private val repo: WeatherInfoRepo
                             ).dayOfMonth
                         }
 
-
-                    Log.d("VM", "Checking ForeCast --------- ${nextFourDaysForecast.size} ---")
-
-                    val datesList = forecastWeatherData.forecastList.distinctBy { it.dt_txt }
-
-                    Log.d("VM", "Checking ForeCast --------- Distint list ${datesList.size} ---")
-
                     val listForDisplay = ArrayList<ForecastDisplayModel>()
                     for (item in nextFourDaysForecast) {
                         val pair = getDayAndTemperature(item)
                         listForDisplay.add(ForecastDisplayModel(pair.first, pair.second))
                     }
-                    Log.d("VM", "Checking ForeCast --------- ${listForDisplay.size}")
                     _nextFourDaysForecast.emit(listForDisplay)
 
                     _loader.emit(false)
